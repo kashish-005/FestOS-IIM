@@ -6,7 +6,7 @@ const USERS = {
   director: ['director123', 'Festival Director', 'tower recon people stay sched stock kitchen lab audit', 'pii med'],
   accom: ['accom123', 'Hospitality Lead', 'tower recon people stay lab', 'pii med'],
   events: ['events123', 'Events Head', 'tower sched people lab', ''],
-  logistics: ['logi123', 'Logistics Head', 'tower stock lab', ''],
+  logistics: ['logi123', 'Logistics Head', 'tower stock lab people', ''],
   vendor: ['vendor123', 'Food Coordinator', 'tower kitchen', ''],
   volunteer: ['vol123', 'Volunteer', 'tower sched stock', '']
 };
@@ -40,14 +40,14 @@ function exportCSV(filename, rows) {
   for (let i = 0; i < 70; i++) P.push({ x: Math.random() * 2000, y: Math.random() * 1200, r: Math.random() * 1.8 + .4, v: Math.random() * .5 + .15, a: Math.random() });
   (function f() { x.clearRect(0, 0, W, H); P.forEach(p => { p.y -= p.v; p.x += Math.sin(p.y / 50 + p.a * 6) * .3; if (p.y < -5) { p.y = H + 5; p.x = Math.random() * W; } x.fillStyle = `rgba(${200 + p.a * 40},${40 + p.a * 60},40,${.15 + p.a * .45})`; x.beginPath(); x.arc(p.x, p.y, p.r, 0, 7); x.fill(); }); requestAnimationFrame(f); })(); })();
 
-/* ---------- login view with Icon + Brief Highlights ---------- */
+/* ---------- login view ---------- */
 const ROLES = [
-  { id: 'director', role: 'Festival Director', hue: 350, desc: 'Sees the whole fest at once and signs off every high-risk call: budget overrides, record merges and the full audit trail.' },
-  { id: 'accom', role: 'Hospitality Lead', hue: 28, desc: 'Owns the beds: hostel blocks, external stays, accessibility needs and the cost-versus-cohesion trade-offs for every contingent.' },
-  { id: 'events', role: 'Events Head', hue: 210, desc: 'Runs the Battle Board: venue-by-time schedule, participant clashes, volunteer cover and last-minute venue changes.' },
-  { id: 'logistics', role: 'Logistics Head', hue: 160, desc: 'Tracks every mic, projector and merch unit by condition and location, and makes sure each item is issued only once.' },
-  { id: 'vendor', role: 'Food Coordinator', hue: 45, desc: 'Keeps the fest fed and safe: hygiene certificates, dietary coverage, vendor hours and cover when a vendor shuts down.' },
-  { id: 'volunteer', role: 'Volunteer', hue: 285, desc: 'Gets a fast desk view of the schedule and stores. Contact, medical and room data stay masked for this role.' }
+  { id: 'director', role: 'Festival Director', hue: 350, desc: 'Sees the whole fest at once and signs off every high-risk call.' },
+  { id: 'accom', role: 'Hospitality Lead', hue: 28, desc: 'Owns the beds: hostel blocks, external stays, accessibility needs.' },
+  { id: 'events', role: 'Events Head', hue: 210, desc: 'Runs the Battle Board: schedule, clashes, volunteer cover.' },
+  { id: 'logistics', role: 'Logistics Head', hue: 160, desc: 'Tracks every mic, projector and merch unit by condition.' },
+  { id: 'vendor', role: 'Food Coordinator', hue: 45, desc: 'Keeps the fest fed and safe: certificates, dietary coverage.' },
+  { id: 'volunteer', role: 'Volunteer', hue: 285, desc: 'Gets a fast desk view of the schedule and stores.' }
 ];
 function signIn(u) { S.user = u; page = 'tower'; log('Signed in', 'Role card'); save(); render(); }
 function loginView() {
@@ -72,22 +72,21 @@ tower() { const { a, sc, alerts } = CUR; return head('Control Tower', 'What need
 
 recon() { const Q = CUR.q; return head('Reconcile the data pack', `The brief expects ~${Q.expected}; the pack holds ${Q.raw}. We keep every record, explain the gap, and never silently delete.`) +
   `<div class="grid">${kpi(Q.raw, 'raw participant records')}${kpi(Q.declared, 'sum of declared contingent strengths')}${kpi(Q.noStay, 'did not request accommodation')}${kpi(Q.dups.length, 'same name+college+age+gender+size (possible dupes)', 'warn')}</div>
-  <div class="note"><b>Reading of the 436-record gap:</b> the pack has 2,836 people, all with ≥1 registration; contingent declarations sum to ${Q.declared}. Declared strengths ≈ expected headcount, so the surplus is likely late registrants, duplicates and un-declared extras. Records stay <i>unconfirmed</i> until a human merges or confirms them. Blanks (${Q.blankGender} gender, ${Q.blankDiet} diet) are treated as <b>unknown</b>, never as consent, eligibility or "no need".</div>
+  <div class="note"><b>Reading of the 436-record gap:</b> contingent declarations sum to ${Q.declared}. Declared strengths ≈ expected headcount, so the surplus is likely late registrants, duplicates and un-declared extras.</div>
   <div class="two"><div><h3>Possible duplicates</h3><div class="scroll"><table><tr><th>Name</th><th>College</th><th>IDs</th><th></th></tr>${Q.dups.slice(0, 60).map((g, i) => { const done = g.slice(1).every(p => S.merged[p.participant_id]); return `<tr><td>${esc(g[0].name)}</td><td>${esc(g[0].college)}</td><td>${g.map(p => p.participant_id).join(', ')}</td><td>${done ? tag('ok', 'merged') : can('lab') ? `<button class="ghost" data-act="merge" data-i="${i}">Merge</button>` : ''}</td></tr>`; }).join('')}</table></div></div>
   <div><h3>Contingent count mismatches</h3><div class="scroll"><table><tr><th>Contingent</th><th>Declared</th><th>In file</th><th>Δ</th></tr>${Q.mism.map(c => `<tr><td>${esc(c.college)} (${c.contingent_id})</td><td>${c.strength_declared}</td><td>${c.listed}</td><td>${tag(Math.abs(c.diff) > 3 ? 'high' : 'med', (c.diff > 0 ? '+' : '') + c.diff)}</td></tr>`).join('')}</table></div>
-  <h3 style="margin-top:1rem">Timing anomalies</h3><p class="sub">${Q.badDates.length} depart before arriving: ${Q.badDates.map(p => p.participant_id).join(', ')} (nights assumed 1). ${Q.early} arrive before 30 Oct.</p></div></div>
-  <h3>Assumptions we state</h3><div class="note">Leaders/escorts are not in participants.csv, so their beds are not modelled. “Ground floor”, “near washroom” and “visual assistance” all map to ground-floor rooms (no washroom data). External properties have no accessibility data → shown as unverified. Check-in 12:00, check-out 10:00, 30 min venue teardown, 15 min travel buffer.</div>`; },
+  </div></div>`; },
 
 people() { const L = FE.people(S), m = q ? L.filter(p => (p.name + p.participant_id + p.college).toLowerCase().includes(q.toLowerCase())).slice(0, 12) : [];
   return head('Participant record', 'One record joining contingent, events, stay, merchandise, food and status.') + `<div class="row"><input id="q" placeholder="Search name, ID or college…" value="${esc(q)}" style="min-width:320px"><button data-act="search">Find</button></div>` + m.map(p => { const r = CUR.a.res[p.participant_id], ev = D.registrations.filter(x => x.participant_id === p.participant_id).map(x => D.events.find(e => e.event_id === x.event_id)?.event_name), iss = S.issued[p.participant_id];
     return `<div class="card" style="margin-bottom:.8rem"><h3>${esc(p.name)} <small style="color:var(--ash)">${p.participant_id} · ${esc(p.college)} (${p.contingent_id})</small></h3><div class="two" style="margin-top:.6rem"><div>Contact: ${mask(p.contact, 'pii')}<br>Gender (as given): ${p.gender_as_given ? esc(p.gender_as_given) : tag('med', 'unknown — not inferred')}<br>Accessibility: ${perm('med') ? esc(p.accessibility_needs || 'UNKNOWN (blank)') : mask('', 'med')}<br>Diet: ${perm('med') || perm('diet') ? esc(p.dietary_needs || 'UNKNOWN (blank)') : mask('', 'med')}<br>Arrives ${esc(p.arrival_datetime)} → leaves ${esc(p.departure_datetime)}</div>
-    <div>Events: ${ev.map(esc).join(', ') || '—'}<br>Stay: ${!r ? 'not requested' : r.kind === 'hostel' ? `Hostel ${r.room}` : r.kind === 'ext' ? `${esc(r.prop)} (${inr(r.cost)})` : tag('high', r.kind)}${r?.flags?.length ? '<br><small style="color:var(--gold)">' + r.flags.map(esc).join('<br>') + '</small>' : ''}<br>Merch: ${iss ? iss.items.join(', ') + ' · issued' : 'nothing issued'} · size ${p.tshirt_size}${can('stock') || can('people') ? `<div class="row">${['T-shirt', 'ID card', 'lanyard', 'tote'].map(i => `<button class="ghost" data-act="issue" data-id="${p.participant_id}" data-i="${i}">Issue ${i}</button>`).join('')}</div>` : ''}</div></div></div>`; }).join('') || (q ? '<p class="sub">No match.</p>' : ''); },
+    <div>Events: ${ev.map(esc).join(', ') || '—'}<br>Stay: ${!r ? 'not requested' : r.kind === 'hostel' ? `Hostel ${r.room}` : r.kind === 'ext' ? `${esc(r.prop)} (${inr(r.cost)})` : tag('high', r.kind)}${r?.flags?.length ? '<br><small style="color:var(--gold)">' + r.flags.map(esc).join('<br>') + '</small>' : ''}<br>Merch: ${iss ? iss.items.join(', ') + ' · issued' : 'nothing issued'} · size ${p.tshirt_size}${can('stock') || can('people') ? `<div class="row">${['T-shirt', 'ID card', 'lanyard', 'tote', 'special badge', 'winner medal'].map(i => `<button class="ghost" data-act="issue" data-id="${p.participant_id}" data-i="${i}">Issue ${i}</button>`).join('')}</div>` : ''}</div></div></div>`; }).join('') || (q ? '<p class="sub">No match.</p>' : ''); },
 
 stay() { const { a } = CUR, sh = a.shortage, byC = {}; FE.people(S).filter(p => p.accommodation_requested === 'yes').forEach(p => { const c = byC[p.contingent_id] = byC[p.contingent_id] || { c: p.contingent_id, n: 0, h: 0, e: 0, x: 0, b: new Set() }, r = a.res[p.participant_id]; c.n++; r.kind === 'hostel' ? (c.h++, c.b.add(r.block)) : r.kind === 'ext' ? (c.e++, c.b.add(r.prop)) : c.x++; });
   return head('Accommodation', 'Hard needs first, cohesion second, cost last. Every relaxed rule is listed with its reason.') +
   `<div class="row" style="margin-bottom:1rem"><button data-act="exportStay">Export to CSV</button></div>
   <div class="grid">${kpi(a.hostel, `in hostels (${sh.totalBeds} beds)`, 'good')}${kpi(a.ext, `in external stays (${inr(a.spent)} of ${inr(a.budget)})`, 'warn')}${kpi(a.unfunded, 'need budget override', 'warn')}${kpi(a.unplaced, 'no bed anywhere', 'bad')}</div>
-  <div class="note">Demand ${a.requested} vs supply ${sh.totalBeds} hostel + ${sh.extBeds} external = ${sh.totalBeds + sh.extBeds}. Wheelchair demand ${sh.wheelchairDemand} vs ${sh.accessibleBeds} accessible beds. Medical safety flags are strictly held on-campus.</div>
+  <div class="note">Demand ${a.requested} vs supply ${sh.totalBeds} hostel + ${sh.extBeds} external = ${sh.totalBeds + sh.extBeds}. Wheelchair demand ${sh.wheelchairDemand} vs ${sh.accessibleBeds} accessible beds.</div>
   ${can('lab') ? `<form class="row card" data-act="budget"><b>Budget</b> ${inr(a.budget)} ${S.budgetOverride ? tag('high', `override +${inr(S.budgetOverride.extra)} by ${S.budgetOverride.by}: ${S.budgetOverride.reason}`) : ''}<input id="bx" type="number" placeholder="extra ₹" style="width:120px"><input id="br" placeholder="reason (required)" style="flex:1"><button>${S.user === 'director' ? 'Authorize override' : 'Request (director only)'}</button></form>` : ''}
   <div class="two"><div><h3>Contingents — cohesion</h3><div class="scroll"><table><tr><th>ID</th><th>Need</th><th>Hostel</th><th>Ext</th><th>None</th><th>Split across</th></tr>${Object.values(byC).sort((x, y) => y.n - x.n).map(c => `<tr><td>${c.c}</td><td>${c.n}</td><td>${c.h}</td><td>${c.e}</td><td>${c.x ? tag('high', c.x) : 0}</td><td>${c.b.size > 1 ? tag(c.b.size > 3 ? 'high' : 'med', c.b.size + ' places') : tag('ok', 'together')}</td></tr>`).join('')}</table></div></div>
   <div><h3>Allotments</h3><div class="scroll"><table><tr><th>Participant ID</th><th>Type</th><th>Location</th><th>Notes</th></tr>${Object.entries(a.res).slice(0, 150).map(([id, v]) => `<tr><td>${id}</td><td>${v.kind}</td><td>${v.kind === 'hostel' ? 'Room ' + v.room : v.prop || '—'}</td><td>${(v.flags || []).map(esc).join('; ')}</td></tr>`).join('')}</table></div></div></div>`; },
@@ -100,12 +99,11 @@ sched() { const { slots, conflicts } = CUR.sc, base = day * 1440 + 480, W = 14 *
 
 stock() { const { rows, logistics } = CUR.m; return head('Stores', 'Merchandise issued once, to the right person. Equipment counted only when serviceable.') +
   `<div class="row" style="margin-bottom:1rem"><button data-act="exportStock">Export to CSV</button></div>
-  <div class="two"><div><h3>Merchandise</h3><table><tr><th>Item</th><th>Size</th><th>Usable</th><th>Issued</th><th>Needed</th><th></th></tr>${rows.map(r => `<tr><td>${r.item}</td><td>${r.size || '—'}</td><td>${r.avail}</td><td>${r.used}</td><td>${r.dem}</td><td>${r.gap < 0 ? tag('high', 'short ' + -r.gap) : tag('ok', '+' + r.gap)}</td></tr>`).join('')}</table></div>
-  <div><h3>Equipment & logistics</h3><table><tr><th>Item</th><th>Good</th><th>Check</th><th>Repair</th>${can('lab') ? '<th></th>' : ''}</tr>${logistics.map(l => `<tr><td>${l.item}</td><td>${l.good ? l.good : tag('high', 0)}</td><td>${l.check}</td><td>${l.repair}</td>${can('lab') ? `<td><button class="ghost" data-act="fail" data-i="${l.item}">Fail 5</button></td>` : ''}</tr>`).join('')}</table></div></div>`; },
+  <div class="two"><div><h3>Merchandise</h3><table><tr><th>Item</th><th>Size</th><th>Usable</th><th>Issued</th><th>Remaining</th><th>Needed</th><th>Gap</th></tr>${rows.map(r => `<tr><td>${r.item}</td><td>${r.size || '—'}</td><td>${r.avail}</td><td>${r.used}</td><td>${r.free <= 0 ? tag('high', r.free) : r.free}</td><td>${r.dem}</td><td>${r.gap < 0 ? tag('high', 'short ' + -r.gap) : tag('ok', '+' + r.gap)}</td></tr>`).join('')}</table></div>
+  <div><h3>Equipment & logistics</h3><table><tr><th>Item</th><th>Good</th><th>Transit</th><th>Check</th><th>Repair</th>${can('lab') ? '<th></th>' : ''}</tr>${logistics.map(l => `<tr><td>${l.item}</td><td>${l.good ? l.good : tag('high', 0)}</td><td>${l.transit}</td><td>${l.check}</td><td>${l.repair}</td>${can('lab') ? `<td><button class="ghost" data-act="fail" data-i="${l.item}">Fail 5</button></td>` : ''}</tr>`).join('')}</table></div></div>`; },
 
 kitchen() { const { vs, cover } = CUR.v; return head('Kitchen', 'Who can legally feed whom — certificates, hours, dietary coverage and payment terms.') +
   `<h3>Dietary coverage (eligible vendors only)</h3><table><tr><th>Need</th><th>People</th><th>Vendors</th><th>Capacity</th><th>Status</th></tr>${cover.map(c => `<tr><td>${esc(c.diet)}</td><td>${c.demand}</td><td>${c.vendors}</td><td>${c.cap}</td><td>${tag(c.gap === 'ok' ? 'ok' : c.gap === 'thin' ? 'med' : 'high', c.gap)}</td></tr>`).join('')}</table>
-  <div class="note">“Nut allergy” can’t be served safely: no vendor declares nut-free handling. Blank diet is unverifiable, never “eat anything”.</div>
   <h3>Vendors</h3><div class="scroll"><table><tr><th>Vendor</th><th>Menu</th><th>Diets</th><th>Cert</th><th>Hours</th><th>Cap</th><th>Payment</th><th></th></tr>${vs.map(v => `<tr><td>${v.vendor_name}</td><td>${v.menu}</td><td>${v.opts.join(', ')}</td><td>${tag(v.st === 'valid' ? 'ok' : v.st === 'expired' ? 'high' : 'med', v.cert + ' · ' + v.st)}</td><td>${v.hours}</td><td>${v.cap}</td><td>${esc(v.payment_terms)}</td><td>${v.dead ? tag('high', 'SHUT DOWN') : can('lab') ? `<button class="ghost" data-act="vdown" data-v="${v.vendor_id}">Shut down</button>` : ''}</td></tr>`).join('')}</table></div>`; },
 
 lab() { const op = (a, b) => D[a].map(x => `<option value="${x[b[0]]}">${esc(x[b[1]])}</option>`).join(''); return head('Disruption Lab', 'Inject a failure. State really changes, the ripple shows who is affected, and the reason is written to the audit trail.') +
@@ -115,7 +113,9 @@ lab() { const op = (a, b) => D[a].map(x => `<option value="${x[b[0]]}">${esc(x[b
   <div class="card"><h3>Equipment failure</h3><div class="row"><select id="ei">${[...new Set(D.inventory_logistics.map(l => l.item))].map(i => `<option>${i}</option>`).join('')}</select><input id="en" type="number" value="10" style="width:80px"></div><button data-act="efail">Fail units</button></div>
   <div class="card"><h3>Venue change</h3><div class="row"><select id="vo">${op('venues', ['venue_id', 'venue_name'])}</select></div><button data-act="vout">Venue unavailable</button></div>
   <div class="card"><h3>Vendor shutdown</h3><div class="row"><select id="vv">${op('vendors', ['vendor_id', 'vendor_name'])}</select></div><button data-act="vdown2">Shut down</button></div>
-  <div class="card"><h3>Duplicate merch claim</h3><div class="row"><input id="mp" placeholder="Participant ID e.g. P0001"></div><button data-act="dclaim">Claim T-shirt twice</button></div></div>`; },
+  
+  <div class="card"><h3>Capacity Override</h3><div class="row"><select id="ce">${op('events', ['event_id', 'event_name'])}</select></div><button data-act="capover">Approve Oversized Event</button></div>
+  </div>`; },
 
 audit() { return head('Audit Trail', 'Every override, who made it and why.') + `<div class="scroll"><table><tr><th>When</th><th>Who</th><th>Action</th><th>Reason</th></tr>${S.audit.map(l => `<tr><td>${l.t}</td><td>${l.user}</td><td>${esc(l.action)}</td><td>${esc(l.reason)}</td></tr>`).join('') || '<tr><td colspan=4>No changes yet.</td></tr>'}</table></div>`; }
 };
@@ -158,11 +158,28 @@ const A = {
   fail(e) { apply(`Equipment failure: 5 × ${e.dataset.i}`, s => s.broken[e.dataset.i] = (s.broken[e.dataset.i] || 0) + 5, val('reason') || prompt('Reason (required):') || ''); },
   vout() { const v = val('vo'); apply(`Venue ${v} unavailable`, s => s.venueOut.push(v), val('reason')); },
   vdown2() { const v = val('vv'); apply(`Vendor ${v} shut down`, s => s.deadVendors.push(v), val('reason')); },
-  vdown(e) { apply(`Vendor ${e.dataset.v} shut down`, s => s.deadVendors.push(e.dataset.v), prompt('Reason (required):') || ''); },
-  dclaim() { const id = val('mp').trim(); if (!FE.people(S).find(p => p.participant_id === id)) return toast('Unknown participant ID.'); A.issue({ dataset: { id, i: 'T-shirt' } }); A.issue({ dataset: { id, i: 'T-shirt' } }); },
-  issue(e) { const id = e.dataset.id, it = e.dataset.i, p = FE.people(S).find(x => x.participant_id === id), rec = S.issued[id] = S.issued[id] || { items: [], size: null };
+  
+  // Issue 6 Fix: Capacity Override action
+  capover() { const e = val('ce'); apply(`Capacity override for event ${e}`, s => s.capOverride.push(e), val('reason')); },
+  
+  issue(e) { 
+    const id = e.dataset.id, it = e.dataset.i;
+    const p = FE.people(S).find(x => x.participant_id === id);
+    const sz = it === 'T-shirt' ? p.tshirt_size : null;
+    
+    const mData = FE.merch(S).rows.find(r => r.item === it && (!sz || r.size === sz));
+    if (!mData) return toast(`Stock record not found for ${it}.`);
+    if (mData.free <= 0) return toast(`Blocked: ${it} ${sz || ''} is OUT OF STOCK (0 remaining).`);
+
+    const rec = S.issued[id] = S.issued[id] || { items: [], size: null };
     if (rec.items.includes(it)) { log(`BLOCKED duplicate claim: ${it} for ${id}`, 'Already issued'); save(); toast(`Blocked: ${id} already received ${it}.`); return render(); }
-    rec.items.push(it); if (it === 'T-shirt') rec.size = p.tshirt_size; log(`Issued ${it} to ${id}`, 'Desk issue'); save(); CUR = FE.snapshot(S); toast(`${it} issued to ${id}.`); render(); },
+    
+    rec.items.push(it); if (it === 'T-shirt') rec.size = p.tshirt_size; 
+    log(`Issued ${it} to ${id}`, 'Desk issue'); 
+    save(); CUR = FE.snapshot(S); 
+    toast(`${it} issued to ${id}.`); 
+    render(); 
+  },
   budget(e, ev) { ev.preventDefault(); const x = +val('bx'), r = val('br'); if (S.user !== 'director') return toast('Only the Festival Director may override budget.'); if (!x || !r.trim()) return toast('Amount and reason are required.'); apply(`Budget override +${inr(x)}`, s => s.budgetOverride = { extra: (s.budgetOverride?.extra || 0) + x, by: s.user, reason: r }, r, true); }
 };
 addEventListener('click', e => { const t = e.target.closest('[data-act]'); if (t && t.tagName !== 'FORM' && A[t.dataset.act]) A[t.dataset.act](t, e); });
