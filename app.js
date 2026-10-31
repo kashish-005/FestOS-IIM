@@ -342,7 +342,7 @@ const views = {
 tower() { const { a, sc, alerts } = CUR; return head('Control Tower', 'What needs a human right now, ranked. Nothing here is hidden inside a score.') +
   `<div class="grid">${kpi(a.hostel + a.ext, `of ${a.requested} stay requests placed`, a.unplaced ? 'bad' : 'good')}${kpi(a.unplaced + a.unfunded, 'beds missing or awaiting budget', 'bad')}${kpi(sc.conflicts.filter(c => c.sev === 'high').length, `serious schedule conflicts (${sc.conflicts.length} total)`, 'warn')}${kpi(alerts.length, 'open alerts')}</div>
     ${charts()}<h3>Needs attention</h3>
-    <h3>Needs attention</h3><div style="margin-top:.6rem; max-height:48vh; overflow-y:auto; padding-right:4px;">${alerts.map((x, i) => `<div class="alert ${x.sev}" style="animation-delay:${i * 40}ms">${tag(x.sev, x.mod)}<div>${esc(x.msg)}</div><small>${esc(x.act)}</small></div>`).join('')}</div>`; },
+    <div style="margin-top:.6rem; max-height:48vh; overflow-y:auto; padding-right:4px;">${alerts.map((x, i) => `<div class="alert ${x.sev}" style="animation-delay:${i * 40}ms">${tag(x.sev, x.mod)}<div>${esc(x.msg)}</div><small>${esc(x.act)}</small></div>`).join('')}</div>`; },
 
 recon() { const Q = CUR.q; return head('Reconcile the data pack', `The brief expects ~${Q.expected}; the pack holds ${Q.raw}. We keep every record, explain the gap, and never silently delete.`) +
   `<div class="grid">${kpi(Q.raw, 'raw participant records')}${kpi(Q.declared, 'sum of declared contingent strengths')}${kpi(Q.noStay, 'did not request accommodation')}${kpi(Q.dups.length, 'same name+college+age+gender+size (possible dupes)', 'warn')}</div>
