@@ -1,33 +1,115 @@
-# FestOS · Ranbhoomi Control (Epinoia 2026, Aarohan)
+# FestOS · Ranbhoomi Control
+### Epinoia 2026 · Aarohan
 
-## Run (no install)
-1. Unzip, open the folder in VS Code.
-2. Double-click `index.html` (or use the Live Server extension, or `python -m http.server 8000` then open http://localhost:8000).
-3. Click any test login below and press Enter. Internet is only used for Google Fonts (falls back offline).
+FestOS is a festival operations command center designed to help organizers manage accommodation, event scheduling, inventory, vendors, disruptions, and audit trails from one place.
 
-If you edit anything in `data/*.csv`, run `python build.py` to regenerate `data.js`.
+**Live Demo:** [https://festos-iim.vercel.app/](https://festos-iim.vercel.app/)
 
-## Test credentials
-| user | password | access |
+## Try the Demo
+
+1. Open the [FestOS Live Demo](https://festos-iim.vercel.app/).
+2. Select a test role or enter one of the credentials below.
+3. Use the relevant dashboard to explore festival operations.
+4. For disruption scenarios, open **Disruption Lab**, enter a reason, and trigger a scenario.
+
+### Test Credentials
+
+| User | Password | Access |
 |---|---|---|
-| director | director123 | everything, budget override, audit |
-| accom | accom123 | stay, reconcile, participants, lab |
-| events | events123 | battle board, lab (contact/medical masked) |
-| logistics | logi123 | stores, lab |
-| vendor | vendor123 | kitchen (sees diet only) |
-| volunteer | vol123 | tower, board, stores (all PII masked) |
+| `director` | `director123` | Full access, budget overrides, audit trail |
+| `accom` | `accom123` | Accommodation, reconciliation, participants, disruption lab |
+| `events` | `events123` | Battle Board and disruption lab; contact/medical data masked |
+| `logistics` | `logi123` | Stores and disruption lab |
+| `vendor` | `vendor123` | Kitchen dashboard; dietary information only |
+| `volunteer` | `vol123` | Control Tower, Battle Board, Stores; personal data masked |
 
-## Live-test cheatsheet (Disruption Lab)
-Type a reason first, then: late contingent, hostel block closure, equipment failure, venue unavailable, vendor shutdown, duplicate merch claim. Duplicate record = Reconcile → Merge. Every change recomputes real state, shows the **Ripple** map, and writes to the Audit Trail. State persists in localStorage; "Reset demo state" clears it.
+> These are demo credentials for evaluation, not production authentication.
 
-## What it decides (and how)
-- **Accommodation**: hard needs first (wheelchair → accessible rooms; ground-floor needs → floor 0), gender only from declared Male/Female; blank/non-binary/undisclosed go to a human-confirmed queue, never guessed. Contingents fill consecutive rooms; overflow goes to external stays cheapest-first within budget; over-budget placements are held until the director overrides with a reason. Re-allocation is *sticky*: people keep their room unless it closed.
-- **Schedule**: greedy scoring over venue × 30-min slots: participant clashes, volunteer cover by shift, capacity, venue-type fit, equipment with zero serviceable units, round ordering. Residual conflicts are listed, not hidden.
-- **Stores**: usable = quantity − reserved; items issued once per person; "under repair/needs check" never counted as usable.
-- **Kitchen**: expired or mid-fest hygiene certificates, hours, dietary coverage per need (nut-allergy and Jain are uncovered; blank diet = unverifiable).
+## Key Modules
 
-## Assumptions & limits (say these in the pitch)
-Leaders/escorts aren't in participants.csv so their beds aren't modelled · no washroom data → "near washroom" treated as ground floor · external stays have no accessibility data → flagged unverified · merch demand counts every active person · schedule is a heuristic, not a proven optimum · login is client-side demo auth (a real build needs a server) · external re-placements are not sticky.
+- **Control Tower** — central overview of festival status, operational alerts, and resource readiness.
+- **Reconcile** — review participant records, contingent-strength differences, and possible duplicate records.
+- **Participants** — unified participant information with role-based access to sensitive fields.
+- **Stay** — accommodation allocation, capacity gaps, accessibility constraints, and external placements.
+- **Battle Board** — event scheduling and visibility into participant, venue, equipment, and volunteer conflicts.
+- **Stores** — inventory availability, reservations, condition tracking, and issuance.
+- **Kitchen** — vendor hours, hygiene status, dietary coverage, and operational issues.
+- **Disruption Lab** — simulate operational changes and inspect their downstream effects.
+- **Audit Trail** — review recorded actions and changes.
 
-## AI disclosure slide (draft)
-AI (Claude) drafted the engine and UI code. The team decided the rules (hard vs relaxed constraints, no inference of blanks), the assumptions above, and the demo flow. Outputs were checked by running the engine on the pack (all 2,836 records, 79 round-slots scheduled, 694 beds short reproduced by hand: 2,144 requests vs 1,450 beds), plus headless-browser click-through of every page and disruption.
+## Disruption Lab Scenarios
+
+Enter a reason before triggering a scenario:
+
+- Late contingent
+- Hostel block closure
+- Equipment failure
+- Venue unavailable
+- Vendor shutdown
+- Duplicate merchandise claim
+
+For duplicate participant records, use **Reconcile → Merge**.
+
+Disruptions recompute the operational state, display the **Ripple** map of downstream effects, and record changes in the Audit Trail.
+
+Demo state is stored in the browser. Use **Reset demo state** to clear simulated changes.
+
+## Decision Logic
+
+### Accommodation
+- Prioritizes hard accessibility needs.
+- Wheelchair needs are matched to accessible rooms; ground-floor needs are matched to floor 0.
+- Gender-based placement uses only explicitly declared Male/Female values.
+- Blank, non-binary, and undisclosed gender values are sent to human review rather than inferred.
+- Contingents are kept together where possible.
+- External stays are considered cheapest-first within the available budget.
+- Over-budget placements require a director override with a reason.
+- Existing placements remain stable unless the assigned room becomes unavailable.
+
+### Event Scheduling
+- Uses a heuristic scoring process across venues and 30-minute time slots.
+- Considers participant clashes, volunteer coverage, venue capacity and type, equipment availability, and round order.
+- Remaining conflicts are surfaced rather than hidden.
+
+### Stores
+- Usable quantity is calculated as quantity minus reserved quantity.
+- Items marked under repair or needing a check are not treated as usable.
+- Merchandise issuance is tracked to avoid duplicate claims.
+
+### Kitchen
+- Checks vendor certificate status, operating hours, and dietary coverage.
+- Expired or during-festival-expiring hygiene certificates are flagged.
+- Nut-allergy and Jain coverage gaps are surfaced.
+- Blank dietary information is treated as unverifiable, not as clearance.
+
+## Data & Validation
+
+FestOS uses the provided Aarohan problem statement and dataset, including participant, registration, contingent, event, venue, hostel, external-stay, inventory, merchandise, vendor, and core-team records.
+
+Key dataset figures:
+- 2,836 participant records
+- 38 contingents
+- 5,580 event registrations
+- 2,144 accommodation requests
+- 1,450 nominal accommodation beds
+- 694-bed overall accommodation shortfall
+
+The dataset contains missing fields, inconsistencies, and operational constraints. FestOS surfaces uncertainty for review instead of silently assuming missing information is valid.
+
+## Assumptions & Limitations
+
+- Contingent leaders and escorts are not included in `participants.csv`; their accommodation is not modelled.
+- Washroom-location data is unavailable, so “near washroom” needs are approximated as ground-floor placement.
+- External stays lack accessibility information; those placements are flagged as unverified.
+- Merchandise demand is estimated using active participants.
+- Event scheduling is heuristic and is not guaranteed to be globally optimal.
+- External accommodation re-placements are not sticky.
+- Authentication is client-side demo authentication; a production deployment would require server-side authentication and authorization.
+
+## AI Tools Disclosure
+
+AI (Claude) assisted with drafting the engine and UI code.
+
+The team defined the operational rules, hard and relaxed constraints, assumptions, and demo workflow. The team reviewed outputs against the supplied dataset, manually checked key figures, and tested the interface and disruption scenarios.
+
+AI-generated outputs were treated as suggestions and were checked before inclusion.
